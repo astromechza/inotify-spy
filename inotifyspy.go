@@ -8,6 +8,8 @@ import (
     "path/filepath"
     "sort"
     "bufio"
+    "strconv"
+    "io/ioutil"
 
     "github.com/fsnotify/fsnotify"
 
@@ -86,7 +88,7 @@ var opNameLookup = map[fsnotify.Op]string {
     fsnotify.Open: "Open",                      // 32
 }
 
-func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, exportCSV string) {
+func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, exportCSV string) error {
 
     fmt.Println()
 
@@ -144,6 +146,61 @@ func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, expor
         }
         fmt.Println(v.Name)
     }
+
+    if exportCSV != "" {
+        fmt.Println("Writing CSV to", exportCSV)
+
+        content := ""
+
+        if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+            content += "Create,"
+        }
+        if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+            content += "Write,"
+        }
+        if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+            content += "Remove,"
+        }
+        if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+            content += "Rename,"
+        }
+        if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+            content += "Chmod,"
+        }
+        if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+            content += "Open,"
+        }
+        content += "Path\n"
+
+        for _, v := range fevents {
+            if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+                content += strconv.Itoa(int(v.Events[fsnotify.Create])) + ","
+            }
+            if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+                content += strconv.Itoa(int(v.Events[fsnotify.Write])) + ","
+            }
+            if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+                content += strconv.Itoa(int(v.Events[fsnotify.Remove])) + ","
+            }
+            if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+                content += strconv.Itoa(int(v.Events[fsnotify.Rename])) + ","
+            }
+            if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+                content += strconv.Itoa(int(v.Events[fsnotify.Chmod])) + ","
+            }
+            if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+                content += strconv.Itoa(int(v.Events[fsnotify.Open])) + ","
+            }
+            content += v.Name + "\n"
+        }
+
+        contentBytes := []byte(content)
+        err := ioutil.WriteFile(exportCSV, contentBytes, 0644)
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 func main() {
@@ -204,7 +261,6 @@ func main() {
     var watchedCounter int
     var notWatchedCounter int
     box := eventbox.NewEventBox()
-    readyChannel := make(chan bool)
 
     var recordMask uint64 = 63
     if (*dontRecordCreate) == true { recordMask -= uint64(fsnotify.Create) }
@@ -215,6 +271,8 @@ func main() {
     if (*dontRecordOpen) == true { recordMask -= uint64(fsnotify.Open) }
 
     fmt.Println("Beginning to watch events..")
+    readyChannel := make(chan bool)
+    stopChannel := make(chan bool)
     go func(live bool, box *eventbox.EventBox) {
         ready := false
         for {
@@ -232,6 +290,8 @@ func main() {
                 // otherwise ignore it
             case <- readyChannel:
                 ready = true
+            case <- stopChannel:
+                return
             case err := <- watcher.Errors:
                 fmt.Printf("error: %v\n", err)
             }
@@ -275,6 +335,10 @@ func main() {
     signal.Notify(signalChannel, os.Interrupt)
     for sig := range signalChannel {
         fmt.Printf("Received %v signal. Stopping.\n", sig)
+        stopChannel <- true
+
+        fmt.Printf("Stopping inotify watcher..")
+        watcher.Close()
 
         doSummary(box, recordMask, *sortByNameFlag, *exportCSVFlag)
 
