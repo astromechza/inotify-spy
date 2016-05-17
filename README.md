@@ -42,15 +42,18 @@ Usage: inotify-spy [-live] [-mute-errors] [-recursive] directory
 Lets create a working directory:
 
 ```
-$ mkdir testing
+$ mkdir -p testing/childdir/grandchilddir
 $ cd testing
-$ mkdir -p childdir/grandchilddir
 ```
 
-Now we start up inotify-spy:
+Now we start up inotify-spy and press Enter to start recording:
 
 ```
 $ inotify-spy -recursive .
+Beginning to watch events..
+Watching 3 directories..
+Press enter to start recording:
+
 ```
 
 And do some operations:
@@ -68,37 +71,40 @@ rm childdir/bob
 And then stop inotify-spy and see what we get:
 
 ```
-ben@pyro:~/testing$ ../inotify-spy -recursive .
-Watching 4 directories..
 Beginning to watch events..
+Watching 3 directories..
+Press enter to start recording:
+
+Beginning to record events. Press Ctrl-C to stop..
 ^CReceived interrupt signal. Stopping.
 
 Create Write  Remove Rename Chmod  Open   Path
-1      1      0      0      0      1      /home/ben/testing/john
-1      0      1      0      0      1      /home/ben/testing/childdir/bob
-1      1      0      0      0      1      /home/ben/testing/childdir/grandchilddir/charles
-1      2      0      1      1      3      /home/ben/testing/bob
+1      2      0      1      1      3      /home/bmeier/testing/bob
+1      1      0      0      0      1      /home/bmeier/testing/childdir/grandchilddir/charles
+1      1      0      0      0      1      /home/bmeier/testing/john
+1      0      1      0      0      1      /home/bmeier/testing/childdir/bob
 ```
 
 If we ran it with `-live` we would also see:
 
 ```
-Beginning to watch events..
-event: "/home/ben/testing/bob": CREATE
-event: "/home/ben/testing/bob": OPEN
-event: "/home/ben/testing/bob": CHMOD
-event: "/home/ben/testing/bob": WRITE
-event: "/home/ben/testing/bob": OPEN
-event: "/home/ben/testing/bob": WRITE
-event: "/home/ben/testing/bob": OPEN
-event: "/home/ben/testing/john": CREATE
-event: "/home/ben/testing/john": OPEN
-event: "/home/ben/testing/john": WRITE
-event: "/home/ben/testing/bob": RENAME
-event: "/home/ben/testing/childdir/bob": CREATE
-event: "/home/ben/testing/childdir/bob": OPEN
-event: "/home/ben/testing/childdir/grandchilddir/charles": CREATE
-event: "/home/ben/testing/childdir/grandchilddir/charles": OPEN
-event: "/home/ben/testing/childdir/grandchilddir/charles": WRITE
-event: "/home/ben/testing/childdir/bob": REMOVE
+Beginning to record events. Press Ctrl-C to stop..
+event: "/home/bmeier/testing/bob": CREATE
+event: "/home/bmeier/testing/bob": OPEN
+event: "/home/bmeier/testing/bob": CHMOD
+event: "/home/bmeier/testing/bob": WRITE
+event: "/home/bmeier/testing/bob": OPEN
+event: "/home/bmeier/testing/bob": WRITE
+event: "/home/bmeier/testing/bob": OPEN
+event: "/home/bmeier/testing/john": CREATE
+event: "/home/bmeier/testing/john": OPEN
+event: "/home/bmeier/testing/john": WRITE
+event: "/home/bmeier/testing/bob": RENAME
+event: "/home/bmeier/testing/childdir/bob": CREATE
+event: "/home/bmeier/testing/childdir/bob": OPEN
+event: "/home/bmeier/testing/childdir/grandchilddir/charles": CREATE
+event: "/home/bmeier/testing/childdir/grandchilddir/charles": OPEN
+event: "/home/bmeier/testing/childdir/grandchilddir/charles": WRITE
+event: "/home/bmeier/testing/childdir/bob": REMOVE
+^CReceived interrupt signal. Stopping.
 ```

@@ -7,6 +7,7 @@ import (
     "os/signal"
     "path/filepath"
     "sort"
+    "bufio"
 
     "github.com/fsnotify/fsnotify"
 
@@ -160,8 +161,6 @@ func main() {
         ready := false
         for {
             select {
-            case <- readyChannel:
-                ready = true
             case event := <- watcher.Events:
                 if ready {
                     event.Name = safeAbsolutePath(event.Name)
@@ -171,6 +170,8 @@ func main() {
                     box.Add(&event)
                 }
                 // otherwise ignore it
+            case <- readyChannel:
+                ready = true
             case err := <- watcher.Errors:
                 fmt.Printf("error: %v\n", err)
             }
@@ -200,8 +201,12 @@ func main() {
         fmt.Println("If you got 'too many open files' or 'no space left on device' you probably need to increase the number of inotify watches you're allowed.")
     }
 
+    fmt.Println("Press enter to start recording:")
+    reader := bufio.NewReader(os.Stdin)
+    reader.ReadString('\n')
+
     // now tell goroutine to start recording things
-    fmt.Println("Beginning to record events..")
+    fmt.Println("Beginning to record events. Press Ctrl-C to stop..")
     readyChannel <- true
 
     // instead of sitting in a for loop or something, we wait for sigint
