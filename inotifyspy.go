@@ -223,9 +223,6 @@ func main() {
     dontRecordChmod := flag.Bool("dont-record-chmod", false, "Don't record chmod events")
     dontRecordOpen := flag.Bool("dont-record-open", false, "Don't record open events")
 
-    // ignore prefix
-    //ignorePrefix := flag.String("ignore-prefix-file", "", "Ignore any directories that start with the given prefixes found in this file")
-
     flag.Usage = func() {
         os.Stderr.WriteString(usageString)
         flag.PrintDefaults()
