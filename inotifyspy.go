@@ -340,7 +340,12 @@ func main() {
         fmt.Printf("Stopping inotify watcher..")
         watcher.Close()
 
-        doSummary(box, recordMask, *sortByNameFlag, *exportCSVFlag)
+        // print and output summary infos
+        err := doSummary(box, recordMask, *sortByNameFlag, *exportCSVFlag)
+        if err != nil {
+            fmt.Printf("Error: %s\n", err.Error())
+            os.Exit(1)
+        }
 
         os.Exit(0)
     }
