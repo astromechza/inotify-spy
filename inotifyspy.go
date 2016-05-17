@@ -90,8 +90,8 @@ func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, expor
 
     fmt.Println()
 
-    strColumn := "%-6s"
-    numColumn := "%-6d"
+    strColumn := "%-7s"
+    numColumn := "%-7d"
     if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
         fmt.Printf(strColumn, "Create")
     }
