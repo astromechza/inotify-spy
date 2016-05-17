@@ -78,36 +78,37 @@ func safeAbsolutePath(path string) string {
 }
 
 var opNameLookup = map[fsnotify.Op]string {
-    fsnotify.Create: "Create",
-    fsnotify.Write: "Write",
-    fsnotify.Remove: "Remove",
-    fsnotify.Rename: "Rename",
-    fsnotify.Chmod: "Chmod",
-    fsnotify.Open: "Open",
+    fsnotify.Create: "Create",                  // 1
+    fsnotify.Write: "Write",                    // 2
+    fsnotify.Remove: "Remove",                  // 4
+    fsnotify.Rename: "Rename",                  // 8
+    fsnotify.Chmod: "Chmod",                    // 16
+    fsnotify.Open: "Open",                      // 32
 }
 
 func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, exportCSV string) {
 
     fmt.Println()
 
-    column := "%-6s"
+    strColumn := "%-6s"
+    numColumn := "%-6d"
     if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
-        fmt.Printf(column, "Create")
+        fmt.Printf(strColumn, "Create")
     }
     if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
-        fmt.Printf(column, "Write")
+        fmt.Printf(strColumn, "Write")
     }
     if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
-        fmt.Printf(column, "Remove")
+        fmt.Printf(strColumn, "Remove")
     }
     if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
-        fmt.Printf(column, "Rename")
+        fmt.Printf(strColumn, "Rename")
     }
     if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
-        fmt.Printf(column, "Chmod")
+        fmt.Printf(strColumn, "Chmod")
     }
     if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
-        fmt.Printf(column, "Open")
+        fmt.Printf(strColumn, "Open")
     }
     fmt.Println("Path")
 
@@ -122,33 +123,24 @@ func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, expor
     }
 
     for _, v := range fevents {
-        fmt.Printf("%-6d %-6d %-6d %-6d %-6d %-6d %s\n",
-            v.Events[fsnotify.Create],
-            v.Events[fsnotify.Write],
-            v.Events[fsnotify.Remove],
-            v.Events[fsnotify.Rename],
-            v.Events[fsnotify.Chmod],
-            v.Events[fsnotify.Open],
-            v.Name,
-        )
 
         if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
-            fmt.Printf(column, v.Events[fsnotify.Create])
+            fmt.Printf(numColumn, v.Events[fsnotify.Create])
         }
         if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
-            fmt.Printf(column, v.Events[fsnotify.Write])
+            fmt.Printf(numColumn, v.Events[fsnotify.Write])
         }
         if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
-            fmt.Printf(column, v.Events[fsnotify.Remove])
+            fmt.Printf(numColumn, v.Events[fsnotify.Remove])
         }
         if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
-            fmt.Printf(column, v.Events[fsnotify.Rename])
+            fmt.Printf(numColumn, v.Events[fsnotify.Rename])
         }
         if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
-            fmt.Printf(column, v.Events[fsnotify.Chmod])
+            fmt.Printf(numColumn, v.Events[fsnotify.Chmod])
         }
         if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
-            fmt.Printf(column, v.Events[fsnotify.Open])
+            fmt.Printf(numColumn, v.Events[fsnotify.Open])
         }
         fmt.Println(v.Name)
     }
@@ -214,13 +206,13 @@ func main() {
     box := eventbox.NewEventBox()
     readyChannel := make(chan bool)
 
-    var recordMask uint64
-    if (*dontRecordCreate) == false { recordMask -= uint64(fsnotify.Create) }
-    if (*dontRecordWrite) == false { recordMask -= uint64(fsnotify.Write) }
-    if (*dontRecordRemove) == false { recordMask -= uint64(fsnotify.Remove) }
-    if (*dontRecordRename) == false { recordMask -= uint64(fsnotify.Rename) }
-    if (*dontRecordChmod) == false { recordMask -= uint64(fsnotify.Chmod) }
-    if (*dontRecordOpen) == false { recordMask -= uint64(fsnotify.Open) }
+    var recordMask uint64 = 63
+    if (*dontRecordCreate) == true { recordMask -= uint64(fsnotify.Create) }
+    if (*dontRecordWrite) == true { recordMask -= uint64(fsnotify.Write) }
+    if (*dontRecordRemove) == true { recordMask -= uint64(fsnotify.Remove) }
+    if (*dontRecordRename) == true { recordMask -= uint64(fsnotify.Rename) }
+    if (*dontRecordChmod) == true { recordMask -= uint64(fsnotify.Chmod) }
+    if (*dontRecordOpen) == true { recordMask -= uint64(fsnotify.Open) }
 
     fmt.Println("Beginning to watch events..")
     go func(live bool, box *eventbox.EventBox) {
