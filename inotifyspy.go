@@ -86,17 +86,40 @@ var opNameLookup = map[fsnotify.Op]string {
     fsnotify.Open: "Open",
 }
 
-func printSummary(box *eventbox.EventBox) {
+func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, exportCSV string) {
 
     fmt.Println()
 
-    fmt.Printf("%-6s %-6s %-6s %-6s %-6s %-6s %s\n", "Create", "Write", "Remove", "Rename", "Chmod", "Open", "Path")
+    column := "%-6s"
+    if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+        fmt.Printf(column, "Create")
+    }
+    if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+        fmt.Printf(column, "Write")
+    }
+    if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+        fmt.Printf(column, "Remove")
+    }
+    if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+        fmt.Printf(column, "Rename")
+    }
+    if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+        fmt.Printf(column, "Chmod")
+    }
+    if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+        fmt.Printf(column, "Open")
+    }
+    fmt.Println("Path")
 
     var fevents []fileevents.FileWithEvents
     for _, v := range (*box).Data {
         fevents = append(fevents, v)
     }
-    sort.Sort(fileevents.ByEventTotal(fevents))
+    if sortByName {
+        sort.Sort(fileevents.ByName(fevents))
+    } else {
+        sort.Sort(fileevents.ByEventTotal(fevents))
+    }
 
     for _, v := range fevents {
         fmt.Printf("%-6d %-6d %-6d %-6d %-6d %-6d %s\n",
@@ -108,6 +131,26 @@ func printSummary(box *eventbox.EventBox) {
             v.Events[fsnotify.Open],
             v.Name,
         )
+
+        if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+            fmt.Printf(column, v.Events[fsnotify.Create])
+        }
+        if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+            fmt.Printf(column, v.Events[fsnotify.Write])
+        }
+        if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+            fmt.Printf(column, v.Events[fsnotify.Remove])
+        }
+        if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+            fmt.Printf(column, v.Events[fsnotify.Rename])
+        }
+        if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+            fmt.Printf(column, v.Events[fsnotify.Chmod])
+        }
+        if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+            fmt.Printf(column, v.Events[fsnotify.Open])
+        }
+        fmt.Println(v.Name)
     }
 }
 
@@ -116,8 +159,23 @@ func main() {
     // flag args
     recursiveFlag := flag.Bool("recursive", false, "Recursively watch target directory")
     liveFlag := flag.Bool("live", false, "Show events live, not just as a summary at the end")
-    muteErrors := flag.Bool("mute-errors", false, "Mute error messages related to setting up watches")
+    muteErrorsFlag := flag.Bool("mute-errors", false, "Mute error messages related to setting up watches")
     versionFlag := flag.Bool("version", false, "Print version information")
+
+    // summary flags
+    sortByNameFlag := flag.Bool("sort-name", false, "Sort summary by file path rather than most events")
+    exportCSVFlag := flag.String("export-csv", "", "Export summary as csv to the given path")
+
+    // record options
+    dontRecordCreate := flag.Bool("dont-record-create", false, "Don't record create events")
+    dontRecordWrite := flag.Bool("dont-record-write", false, "Don't record write events")
+    dontRecordRemove := flag.Bool("dont-record-remove", false, "Don't record remove events")
+    dontRecordRename := flag.Bool("dont-record-rename", false, "Don't record rename events")
+    dontRecordChmod := flag.Bool("dont-record-chmod", false, "Don't record chmod events")
+    dontRecordOpen := flag.Bool("dont-record-open", false, "Don't record open events")
+
+    // ignore prefix
+    //ignorePrefix := flag.String("ignore-prefix-file", "", "Ignore any directories that start with the given prefixes found in this file")
 
     flag.Usage = func() {
         os.Stderr.WriteString(usageString)
@@ -149,12 +207,20 @@ func main() {
     defer watcher.Close()
 
     // get mute value
-    mustMute := *muteErrors
+    mustMute := *muteErrorsFlag
 
     var watchedCounter int
     var notWatchedCounter int
     box := eventbox.NewEventBox()
     readyChannel := make(chan bool)
+
+    var recordMask uint64
+    if (*dontRecordCreate) == false { recordMask -= uint64(fsnotify.Create) }
+    if (*dontRecordWrite) == false { recordMask -= uint64(fsnotify.Write) }
+    if (*dontRecordRemove) == false { recordMask -= uint64(fsnotify.Remove) }
+    if (*dontRecordRename) == false { recordMask -= uint64(fsnotify.Rename) }
+    if (*dontRecordChmod) == false { recordMask -= uint64(fsnotify.Chmod) }
+    if (*dontRecordOpen) == false { recordMask -= uint64(fsnotify.Open) }
 
     fmt.Println("Beginning to watch events..")
     go func(live bool, box *eventbox.EventBox) {
@@ -163,11 +229,13 @@ func main() {
             select {
             case event := <- watcher.Events:
                 if ready {
-                    event.Name = safeAbsolutePath(event.Name)
-                    if live {
-                        fmt.Printf("event: %v\n", event.String())
+                    if recordMask & uint64(event.Op) == uint64(event.Op) {
+                        event.Name = safeAbsolutePath(event.Name)
+                        if live {
+                            fmt.Printf("event: %v\n", event.String())
+                        }
+                        box.Add(&event)
                     }
-                    box.Add(&event)
                 }
                 // otherwise ignore it
             case <- readyChannel:
@@ -216,7 +284,7 @@ func main() {
     for sig := range signalChannel {
         fmt.Printf("Received %v signal. Stopping.\n", sig)
 
-        printSummary(box)
+        doSummary(box, recordMask, *sortByNameFlag, *exportCSVFlag)
 
         os.Exit(0)
     }
