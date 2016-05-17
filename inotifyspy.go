@@ -152,6 +152,30 @@ func main() {
 
     var watchedCounter int
     var notWatchedCounter int
+    box := eventbox.NewEventBox()
+    readyChannel := make(chan bool)
+
+    fmt.Println("Beginning to watch events..")
+    go func(live bool, box *eventbox.EventBox) {
+        ready := false
+        for {
+            select {
+            case <- readyChannel:
+                ready = true
+            case event := <- watcher.Events:
+                if ready {
+                    event.Name = safeAbsolutePath(event.Name)
+                    if live {
+                        fmt.Printf("event: %v\n", event.String())
+                    }
+                    box.Add(&event)
+                }
+                // otherwise ignore it
+            case err := <- watcher.Errors:
+                fmt.Printf("error: %v\n", err)
+            }
+        }
+    }(*liveFlag, box)
 
     if (*recursiveFlag) {
         err = filepath.Walk(targetDir, addDirWatchers(watcher, &watchedCounter, &notWatchedCounter, mustMute))
@@ -176,23 +200,9 @@ func main() {
         fmt.Println("If you got 'too many open files' or 'no space left on device' you probably need to increase the number of inotify watches you're allowed.")
     }
 
-    box := eventbox.NewEventBox()
-
-    fmt.Println("Beginning to watch events..")
-    go func(live bool, box *eventbox.EventBox) {
-        for {
-            select {
-            case event := <-watcher.Events:
-                event.Name = safeAbsolutePath(event.Name)
-                if live {
-                    fmt.Printf("event: %v\n", event.String())
-                }
-                box.Add(&event)
-            case err := <-watcher.Errors:
-                fmt.Printf("error: %v\n", err)
-            }
-        }
-    }(*liveFlag, box)
+    // now tell goroutine to start recording things
+    fmt.Println("Beginning to record events..")
+    readyChannel <- true
 
     // instead of sitting in a for loop or something, we wait for sigint
     signalChannel := make(chan os.Signal, 1)
