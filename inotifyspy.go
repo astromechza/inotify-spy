@@ -152,21 +152,20 @@ func main() {
 
     var watchedCounter int
     var notWatchedCounter int
-    err = watcher.Add(targetDir)
-    if err != nil {
-        if mustMute == false {
-            fmt.Printf("Could not watch %v: %v\n", targetDir, err.Error())
-        }
-        notWatchedCounter++
-    } else {
-        watchedCounter++
-    }
 
     if (*recursiveFlag) {
         err = filepath.Walk(targetDir, addDirWatchers(watcher, &watchedCounter, &notWatchedCounter, mustMute))
         if err != nil {
             fmt.Printf("Could not walk %v: %v\n", targetDir, err.Error())
             os.Exit(1)
+        }
+    } else {
+        err = watcher.Add(targetDir)
+        if err != nil {
+            fmt.Printf("Could not watch %v: %v\n", targetDir, err.Error())
+            os.Exit(1)
+        } else {
+            watchedCounter++
         }
     }
 

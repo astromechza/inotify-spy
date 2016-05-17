@@ -30,10 +30,10 @@ func (b *EventBox) Add(e *fsnotify.Event) {
             Events: make(map[fsnotify.Op]int64),
             Total: 0,
         }
-        b.Data[e.Name] = fevent
     }
 
     count := fevent.Events[e.Op]
     fevent.Events[e.Op] = count + 1
     fevent.Total++
+    b.Data[e.Name] = fevent
 }
