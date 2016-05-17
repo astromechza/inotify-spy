@@ -14,6 +14,43 @@ import (
     "github.com/AstromechZA/inotify-spy/eventbox"
 )
 
+const versionString =
+`Version: 1.0
+          ____
+     _[]_/____\__n_
+    |_____.--.__()_|
+    |LI  //# \\    |
+    |    \\__//    |
+    |     '--'     |
+    '--------------'
+
+Project: https://github.com/AstromechZA/inotify-spy
+`
+
+const usageString =
+`inotify-spy is a simple binary for doing inotify watching on Linux.
+It will allow you to watch a directory or directory tree for file events:
+
+- Create
+- Write
+- Remove
+- Rename
+- Chmod
+- Open
+
+Because this tool uses inotify events, it has to create one for each directory
+that it watches. On most systems there is a limit to the number of inotify
+watches or files a process is allowed to create at once. You might hit these
+limits if you try to watch a very large tree of directories. On most systems
+there are ways to increase these limits if required.
+
+This tool will continue to watch the tree until you stop it using SIGINT (Ctrl-C)
+which will cause it to print a sorted summary of the files touched.
+
+Usage: inotify-spy [-live] [-mute-errors] [-recursive] directory
+
+`
+
 func addDirWatchers(w *fsnotify.Watcher, wyes *int, wno *int, mute bool) filepath.WalkFunc {
     return func(path string, info os.FileInfo, err error) error {
         if err != nil { return nil }
@@ -77,11 +114,22 @@ func main() {
 
     // flag args
     recursiveFlag := flag.Bool("recursive", false, "Recursively watch target directory")
-    liveFlag := flag.Bool("live", false, "Show events live, not as a summary")
+    liveFlag := flag.Bool("live", false, "Show events live, not just as a summary at the end")
     muteErrors := flag.Bool("mute-errors", false, "Mute error messages related to setting up watches")
+    versionFlag := flag.Bool("version", false, "Print version information")
+
+    flag.Usage = func() {
+        os.Stderr.WriteString(usageString)
+        flag.PrintDefaults()
+    }
 
     // parse them
     flag.Parse()
+
+    if (*versionFlag) {
+        fmt.Print(versionString)
+        os.Exit(0)
+    }
 
     // make sure we have our single positional arg
     if len(flag.Args()) != 1 {
