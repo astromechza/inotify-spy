@@ -55,6 +55,13 @@ Usage: inotify-spy [-live] [-mute-errors] [-recursive] directory
         Print version information
 ```
 
+## Installation
+
+1. Download the binary from the releases page on github or build from source.
+2. Copy the resulting binary to `/usr/bin`, `/usr/local/bin` or wherever you
+    like to keep your binaries.
+3. Make sure its exposed on your $PATH variable so that you can get at it.
+
 ## Example
 
 Lets create a working directory:
