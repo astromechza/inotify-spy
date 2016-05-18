@@ -6,16 +6,14 @@ import (
     "os"
     "os/signal"
     "path/filepath"
-    "sort"
     "bufio"
-    "strconv"
     "io/ioutil"
     "strings"
 
     "github.com/fsnotify/fsnotify"
 
-    "github.com/AstromechZA/inotify-spy/fileevents"
     "github.com/AstromechZA/inotify-spy/eventbox"
+    "github.com/AstromechZA/inotify-spy/summary"
 )
 
 const versionString =
@@ -55,6 +53,12 @@ Usage: inotify-spy [-live] [-mute-errors] [-recursive] directory
 
 `
 
+func safeAbsolutePath(path string) string {
+    abspath, err := filepath.Abs(path)
+    if err == nil { return abspath }
+    return path
+}
+
 func mustIgnorePath(path string, ignore *[]string) bool {
     for _, s := range *ignore {
         if strings.HasPrefix(path, s) {
@@ -68,6 +72,8 @@ func addDirWatchers(w *fsnotify.Watcher, wyes *int, wno *int, mute bool, ignoreP
     return func(path string, info os.FileInfo, err error) error {
         if err != nil { return nil }
         if info.IsDir() {
+            path = safeAbsolutePath(path)
+
             if mustIgnorePath(path, ignorePrefixes) {
                 fmt.Printf("Not watching %v or its children since it matches an ignore prefix\n", path)
                 return filepath.SkipDir
@@ -85,140 +91,6 @@ func addDirWatchers(w *fsnotify.Watcher, wyes *int, wno *int, mute bool, ignoreP
         }
         return nil
     }
-}
-
-func safeAbsolutePath(path string) string {
-    abspath, err := filepath.Abs(path)
-    if err == nil { return abspath }
-    return path
-}
-
-var opNameLookup = map[fsnotify.Op]string {
-    fsnotify.Create: "Create",                  // 1
-    fsnotify.Write: "Write",                    // 2
-    fsnotify.Remove: "Remove",                  // 4
-    fsnotify.Rename: "Rename",                  // 8
-    fsnotify.Chmod: "Chmod",                    // 16
-    fsnotify.Open: "Open",                      // 32
-}
-
-func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, exportCSV string) error {
-
-    fmt.Println()
-
-    strColumn := "%-7s"
-    numColumn := "%-7d"
-    if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
-        fmt.Printf(strColumn, "Create")
-    }
-    if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
-        fmt.Printf(strColumn, "Write")
-    }
-    if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
-        fmt.Printf(strColumn, "Remove")
-    }
-    if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
-        fmt.Printf(strColumn, "Rename")
-    }
-    if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
-        fmt.Printf(strColumn, "Chmod")
-    }
-    if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
-        fmt.Printf(strColumn, "Open")
-    }
-    fmt.Println("Path")
-
-    var fevents []fileevents.FileWithEvents
-    for _, v := range (*box).Data {
-        fevents = append(fevents, v)
-    }
-    if sortByName {
-        sort.Sort(fileevents.ByName(fevents))
-    } else {
-        sort.Sort(fileevents.ByEventTotal(fevents))
-    }
-
-    for _, v := range fevents {
-
-        if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
-            fmt.Printf(numColumn, v.Events[fsnotify.Create])
-        }
-        if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
-            fmt.Printf(numColumn, v.Events[fsnotify.Write])
-        }
-        if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
-            fmt.Printf(numColumn, v.Events[fsnotify.Remove])
-        }
-        if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
-            fmt.Printf(numColumn, v.Events[fsnotify.Rename])
-        }
-        if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
-            fmt.Printf(numColumn, v.Events[fsnotify.Chmod])
-        }
-        if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
-            fmt.Printf(numColumn, v.Events[fsnotify.Open])
-        }
-        fmt.Println(v.Name)
-    }
-
-    if len(fevents) == 0 {
-        fmt.Println("No events recorded.")
-    }
-
-    if exportCSV != "" {
-        fmt.Println("Writing CSV to", exportCSV)
-
-        content := ""
-
-        if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
-            content += "Create,"
-        }
-        if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
-            content += "Write,"
-        }
-        if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
-            content += "Remove,"
-        }
-        if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
-            content += "Rename,"
-        }
-        if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
-            content += "Chmod,"
-        }
-        if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
-            content += "Open,"
-        }
-        content += "Path\n"
-
-        for _, v := range fevents {
-            if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
-                content += strconv.Itoa(int(v.Events[fsnotify.Create])) + ","
-            }
-            if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
-                content += strconv.Itoa(int(v.Events[fsnotify.Write])) + ","
-            }
-            if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
-                content += strconv.Itoa(int(v.Events[fsnotify.Remove])) + ","
-            }
-            if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
-                content += strconv.Itoa(int(v.Events[fsnotify.Rename])) + ","
-            }
-            if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
-                content += strconv.Itoa(int(v.Events[fsnotify.Chmod])) + ","
-            }
-            if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
-                content += strconv.Itoa(int(v.Events[fsnotify.Open])) + ","
-            }
-            content += v.Name + "\n"
-        }
-
-        contentBytes := []byte(content)
-        err := ioutil.WriteFile(exportCSV, contentBytes, 0644)
-        if err != nil {
-            return err
-        }
-    }
-    return nil
 }
 
 func main() {
@@ -369,11 +241,11 @@ func main() {
         fmt.Printf("Received %v signal. Stopping.\n", sig)
         stopChannel <- true
 
-        fmt.Printf("Stopping inotify watcher..")
+        fmt.Printf("Stopping inotify watcher..\n")
         watcher.Close()
 
         // print and output summary infos
-        err := doSummary(box, recordMask, *sortByNameFlag, *exportCSVFlag)
+        err := summary.DoSummary(box, recordMask, *sortByNameFlag, *exportCSVFlag)
         if err != nil {
             fmt.Printf("Error: %s\n", err.Error())
             os.Exit(1)

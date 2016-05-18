@@ -108,3 +108,29 @@ event: "/home/bmeier/testing/childdir/grandchilddir/charles": WRITE
 event: "/home/bmeier/testing/childdir/bob": REMOVE
 ^CReceived interrupt signal. Stopping.
 ```
+
+### Using ignore prefixes
+
+In some cases, mostly very large and deep directory trees, or systems with
+alot of other noisey file changes, you may want to ignore events from some
+parts of the tree.
+
+To do this, `inotify-spy` supports an `-ignore-prefixes` option. This option
+should point to a file that contains a list of absolute path prefixes that will
+be ignored. I chose to use absolute path prefixes in this file, since relative
+paths lose their meaning when calling the binary from different locations or
+when changing directories.
+
+For example, we want to watch `/var/` but we are getting too many unwanted
+events from an application logging to `/var/log`. Ignore prefixes allow us
+to create a file containing `/var/log` and specify that at runtime:
+
+```
+$ inotify-spy -recursive -live -ignore-prefixes prefixe-file /var
+```
+
+When a path is being ignored, you'll see something like this:
+
+```
+Not watching /var/log or its children since it matches an ignore prefix
+```
