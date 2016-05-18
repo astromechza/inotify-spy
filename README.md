@@ -27,12 +27,30 @@ which will cause it to print a sorted summary of the files touched.
 
 Usage: inotify-spy [-live] [-mute-errors] [-recursive] directory
 
+  -dont-record-chmod
+        Don't record chmod events
+  -dont-record-create
+        Don't record create events
+  -dont-record-open
+        Don't record open events
+  -dont-record-remove
+        Don't record remove events
+  -dont-record-rename
+        Don't record rename events
+  -dont-record-write
+        Don't record write events
+  -export-csv string
+        Export summary as csv to the given path
+  -ignore-prefixes string
+        File to read ignore prefixes from
   -live
         Show events live, not just as a summary at the end
   -mute-errors
         Mute error messages related to setting up watches
   -recursive
         Recursively watch target directory
+  -sort-name
+        Sort summary by file path rather than most events
   -version
         Print version information
 ```
