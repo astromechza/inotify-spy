@@ -10,6 +10,7 @@ import (
     "bufio"
     "strconv"
     "io/ioutil"
+    "strings"
 
     "github.com/fsnotify/fsnotify"
 
@@ -54,11 +55,24 @@ Usage: inotify-spy [-live] [-mute-errors] [-recursive] directory
 
 `
 
-func addDirWatchers(w *fsnotify.Watcher, wyes *int, wno *int, mute bool) filepath.WalkFunc {
+func mustIgnorePath(path string, ignore *[]string) bool {
+    for _, s := range *ignore {
+        if strings.HasPrefix(path, s) {
+            return true
+        }
+    }
+    return false
+}
+
+func addDirWatchers(w *fsnotify.Watcher, wyes *int, wno *int, mute bool, ignorePrefixes *[]string) filepath.WalkFunc {
     return func(path string, info os.FileInfo, err error) error {
         if err != nil { return nil }
-
         if info.IsDir() {
+            if mustIgnorePath(path, ignorePrefixes) {
+                fmt.Printf("Not watching %v or its children since it matches an ignore prefix\n", path)
+                return filepath.SkipDir
+            }
+
             e := w.Add(path)
             if e != nil {
                 if mute == false {
@@ -147,6 +161,10 @@ func doSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, expor
         fmt.Println(v.Name)
     }
 
+    if len(fevents) == 0 {
+        fmt.Println("No events recorded.")
+    }
+
     if exportCSV != "" {
         fmt.Println("Writing CSV to", exportCSV)
 
@@ -223,6 +241,9 @@ func main() {
     dontRecordChmod := flag.Bool("dont-record-chmod", false, "Don't record chmod events")
     dontRecordOpen := flag.Bool("dont-record-open", false, "Don't record open events")
 
+    // ignore prefixes
+    ignorePrefixFlag := flag.String("ignore-prefixes", "", "File to read ignore prefixes from")
+
     flag.Usage = func() {
         os.Stderr.WriteString(usageString)
         flag.PrintDefaults()
@@ -243,6 +264,20 @@ func main() {
     }
 
     targetDir := flag.Args()[0]
+
+    // read ignore prefixes if required
+    var ignorePrefixes []string
+    ignorePrefixFile := *ignorePrefixFlag
+    if ignorePrefixFile != "" {
+        fmt.Printf("Loading ignore prefixes from %v\n", ignorePrefixFile)
+        prefixes, err := ioutil.ReadFile(ignorePrefixFile)
+        if err != nil {
+            fmt.Printf("Could not open ignore prefixes file %v: %v\n", ignorePrefixFile, err.Error())
+            os.Exit(1)
+        }
+        ignorePrefixes = strings.Split(strings.TrimSpace(string(prefixes)), "\n")
+        fmt.Printf("Loaded %d ignore prefixes\n", len(ignorePrefixes))
+    }
 
     // setup watcher
     watcher, err := fsnotify.NewWatcher()
@@ -296,7 +331,7 @@ func main() {
     }(*liveFlag, box)
 
     if (*recursiveFlag) {
-        err = filepath.Walk(targetDir, addDirWatchers(watcher, &watchedCounter, &notWatchedCounter, mustMute))
+        err = filepath.Walk(targetDir, addDirWatchers(watcher, &watchedCounter, &notWatchedCounter, mustMute, &ignorePrefixes))
         if err != nil {
             fmt.Printf("Could not walk %v: %v\n", targetDir, err.Error())
             os.Exit(1)

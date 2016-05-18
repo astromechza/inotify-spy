@@ -108,9 +108,3 @@ event: "/home/bmeier/testing/childdir/grandchilddir/charles": WRITE
 event: "/home/bmeier/testing/childdir/bob": REMOVE
 ^CReceived interrupt signal. Stopping.
 ```
-
-## Features to add
-
-- ignore certain paths (some kind of ignore file)
-- export as csv report
-- force dontRecordOpen on all but linux
