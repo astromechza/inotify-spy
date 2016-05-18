@@ -103,6 +103,8 @@ Create Write  Remove Rename Chmod  Open   Path
 1      0      1      0      0      1      /home/bmeier/testing/childdir/bob
 ```
 
+By the way, you can use `-sort-name` to sort the paths by the Path columns.
+
 If we ran it with `-live` we would also see:
 
 ```
