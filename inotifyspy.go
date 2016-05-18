@@ -17,7 +17,7 @@ import (
 )
 
 const versionString =
-`Version: 1.0
+`Version: 1.1
           ____
      _[]_/____\__n_
     |_____.--.__()_|
