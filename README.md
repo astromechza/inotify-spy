@@ -1,6 +1,6 @@
 # inotify-spy
 
-Binary for watching inotify events on a folder recursively. Similar to inotifywatch.
+Binary for watching inotify events on folders. Similar to inotifywatch.
 
 ## Usage
 
@@ -16,9 +16,9 @@ It will allow you to watch a directory or directory tree for file events:
 - Chmod
 - Open
 
-Because this tool uses inotify events, it has to create one for each directory
-that it watches. On most systems there is a limit to the number of inotify
-watches or files a process is allowed to create at once. You might hit these
+Because this tool uses inotify events, it has to create a inotify file for each
+directory you want to watch. On most systems there is a limit to the number of
+inotify files a process is allowed to create at once. You might hit these
 limits if you try to watch a very large tree of directories. On most systems
 there are ways to increase these limits if required.
 
@@ -55,7 +55,24 @@ Usage: inotify-spy [-live] [-mute-errors] [-recursive] directory
         Print version information
 ```
 
+```
+$ ./inotify-spy --version
+Version: 1.1
+          ____
+     _[]_/____\__n_
+    |_____.--.__()_|
+    |LI  //# \\    |
+    |    \\__//    |
+    |     '--'     |
+    '--------------'
+
+Project: https://github.com/AstromechZA/inotify-spy
+```
+
 ## Installation
+
+Binaries have been produced for Linux 64 bit and 32 bit, and Darwin(OSX) 64 bit.
+Note that Linux has the most support, Darwin doesn't record OPEN events.
 
 1. Download the binary from the releases page on github or build from source.
 2. Copy the resulting binary to `/usr/bin`, `/usr/local/bin` or wherever you
@@ -104,10 +121,10 @@ Beginning to record events. Press Ctrl-C to stop..
 ^CReceived interrupt signal. Stopping.
 
 Create Write  Remove Rename Chmod  Open   Path
-1      2      0      1      1      3      /home/bmeier/testing/bob
-1      1      0      0      0      1      /home/bmeier/testing/childdir/grandchilddir/charles
-1      1      0      0      0      1      /home/bmeier/testing/john
-1      0      1      0      0      1      /home/bmeier/testing/childdir/bob
+1      2      0      1      1      3      /home/username/testing/bob
+1      1      0      0      0      1      /home/username/testing/childdir/grandchilddir/charles
+1      1      0      0      0      1      /home/username/testing/john
+1      0      1      0      0      1      /home/username/testing/childdir/bob
 ```
 
 By the way, you can use `-sort-name` to sort the paths by the Path columns.
@@ -116,25 +133,33 @@ If we ran it with `-live` we would also see:
 
 ```
 Beginning to record events. Press Ctrl-C to stop..
-event: "/home/bmeier/testing/bob": CREATE
-event: "/home/bmeier/testing/bob": OPEN
-event: "/home/bmeier/testing/bob": CHMOD
-event: "/home/bmeier/testing/bob": WRITE
-event: "/home/bmeier/testing/bob": OPEN
-event: "/home/bmeier/testing/bob": WRITE
-event: "/home/bmeier/testing/bob": OPEN
-event: "/home/bmeier/testing/john": CREATE
-event: "/home/bmeier/testing/john": OPEN
-event: "/home/bmeier/testing/john": WRITE
-event: "/home/bmeier/testing/bob": RENAME
-event: "/home/bmeier/testing/childdir/bob": CREATE
-event: "/home/bmeier/testing/childdir/bob": OPEN
-event: "/home/bmeier/testing/childdir/grandchilddir/charles": CREATE
-event: "/home/bmeier/testing/childdir/grandchilddir/charles": OPEN
-event: "/home/bmeier/testing/childdir/grandchilddir/charles": WRITE
-event: "/home/bmeier/testing/childdir/bob": REMOVE
+event: "/home/username/testing/bob": CREATE
+event: "/home/username/testing/bob": OPEN
+event: "/home/username/testing/bob": CHMOD
+event: "/home/username/testing/bob": WRITE
+event: "/home/username/testing/bob": OPEN
+event: "/home/username/testing/bob": WRITE
+event: "/home/username/testing/bob": OPEN
+event: "/home/username/testing/john": CREATE
+event: "/home/username/testing/john": OPEN
+event: "/home/username/testing/john": WRITE
+event: "/home/username/testing/bob": RENAME
+event: "/home/username/testing/childdir/bob": CREATE
+event: "/home/username/testing/childdir/bob": OPEN
+event: "/home/username/testing/childdir/grandchilddir/charles": CREATE
+event: "/home/username/testing/childdir/grandchilddir/charles": OPEN
+event: "/home/username/testing/childdir/grandchilddir/charles": WRITE
+event: "/home/username/testing/childdir/bob": REMOVE
 ^CReceived interrupt signal. Stopping.
 ```
+
+### Caveats
+
+At the moment, this system won't be able to watch new directories that are
+created after the program has started since it simply hasn't opened an inotify
+file on them. This could be fixed but capturing CREATE events that refer to a
+directory and then putting another watch on the resulting directory but I
+haven't got around to that yet.
 
 ### Using ignore prefixes
 

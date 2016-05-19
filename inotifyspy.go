@@ -40,9 +40,9 @@ It will allow you to watch a directory or directory tree for file events:
 - Chmod
 - Open
 
-Because this tool uses inotify events, it has to create one for each directory
-that it watches. On most systems there is a limit to the number of inotify
-watches or files a process is allowed to create at once. You might hit these
+Because this tool uses inotify events, it has to create a inotify file for each
+directory you want to watch. On most systems there is a limit to the number of
+inotify files a process is allowed to create at once. You might hit these
 limits if you try to watch a very large tree of directories. On most systems
 there are ways to increase these limits if required.
 
@@ -166,13 +166,13 @@ func main() {
     var notWatchedCounter int
     box := eventbox.NewEventBox()
 
-    var recordMask uint64 = 63
-    if (*dontRecordCreate) == true { recordMask -= uint64(fsnotify.Create) }
-    if (*dontRecordWrite) == true { recordMask -= uint64(fsnotify.Write) }
-    if (*dontRecordRemove) == true { recordMask -= uint64(fsnotify.Remove) }
-    if (*dontRecordRename) == true { recordMask -= uint64(fsnotify.Rename) }
-    if (*dontRecordChmod) == true { recordMask -= uint64(fsnotify.Chmod) }
-    if (*dontRecordOpen) == true { recordMask -= uint64(fsnotify.Open) }
+    var recordMask uint = 63
+    if (*dontRecordCreate) == true { recordMask -= uint(fsnotify.Create) }
+    if (*dontRecordWrite) == true { recordMask -= uint(fsnotify.Write) }
+    if (*dontRecordRemove) == true { recordMask -= uint(fsnotify.Remove) }
+    if (*dontRecordRename) == true { recordMask -= uint(fsnotify.Rename) }
+    if (*dontRecordChmod) == true { recordMask -= uint(fsnotify.Chmod) }
+    if (*dontRecordOpen) == true { recordMask -= uint(fsnotify.Open) }
 
     fmt.Println("Beginning to watch events..")
     readyChannel := make(chan bool)
@@ -183,7 +183,7 @@ func main() {
             select {
             case event := <- watcher.Events:
                 if ready {
-                    if recordMask & uint64(event.Op) == uint64(event.Op) {
+                    if recordMask & uint(event.Op) == uint(event.Op) {
                         event.Name = safeAbsolutePath(event.Name)
                         if live {
                             fmt.Printf("event: %v\n", event.String())

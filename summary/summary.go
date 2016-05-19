@@ -21,28 +21,28 @@ var opNameLookup = map[fsnotify.Op]string {
     fsnotify.Open: "Open",                      // 32
 }
 
-func DoSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, exportCSV string) error {
+func DoSummary(box *eventbox.EventBox, recordMask uint, sortByName bool, exportCSV string) error {
 
     fmt.Println()
 
     strColumn := "%-7s"
     numColumn := "%-7d"
-    if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+    if recordMask & uint(fsnotify.Create) == uint(fsnotify.Create) {
         fmt.Printf(strColumn, "Create")
     }
-    if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+    if recordMask & uint(fsnotify.Write) == uint(fsnotify.Write) {
         fmt.Printf(strColumn, "Write")
     }
-    if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+    if recordMask & uint(fsnotify.Remove) == uint(fsnotify.Remove) {
         fmt.Printf(strColumn, "Remove")
     }
-    if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+    if recordMask & uint(fsnotify.Rename) == uint(fsnotify.Rename) {
         fmt.Printf(strColumn, "Rename")
     }
-    if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+    if recordMask & uint(fsnotify.Chmod) == uint(fsnotify.Chmod) {
         fmt.Printf(strColumn, "Chmod")
     }
-    if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+    if recordMask & uint(fsnotify.Open) == uint(fsnotify.Open) {
         fmt.Printf(strColumn, "Open")
     }
     fmt.Println("Path")
@@ -59,22 +59,22 @@ func DoSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, expor
 
     for _, v := range fevents {
 
-        if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+        if recordMask & uint(fsnotify.Create) == uint(fsnotify.Create) {
             fmt.Printf(numColumn, v.Events[fsnotify.Create])
         }
-        if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+        if recordMask & uint(fsnotify.Write) == uint(fsnotify.Write) {
             fmt.Printf(numColumn, v.Events[fsnotify.Write])
         }
-        if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+        if recordMask & uint(fsnotify.Remove) == uint(fsnotify.Remove) {
             fmt.Printf(numColumn, v.Events[fsnotify.Remove])
         }
-        if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+        if recordMask & uint(fsnotify.Rename) == uint(fsnotify.Rename) {
             fmt.Printf(numColumn, v.Events[fsnotify.Rename])
         }
-        if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+        if recordMask & uint(fsnotify.Chmod) == uint(fsnotify.Chmod) {
             fmt.Printf(numColumn, v.Events[fsnotify.Chmod])
         }
-        if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+        if recordMask & uint(fsnotify.Open) == uint(fsnotify.Open) {
             fmt.Printf(numColumn, v.Events[fsnotify.Open])
         }
         fmt.Println(v.Name)
@@ -89,43 +89,43 @@ func DoSummary(box *eventbox.EventBox, recordMask uint64, sortByName bool, expor
 
         content := ""
 
-        if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+        if recordMask & uint(fsnotify.Create) == uint(fsnotify.Create) {
             content += "Create,"
         }
-        if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+        if recordMask & uint(fsnotify.Write) == uint(fsnotify.Write) {
             content += "Write,"
         }
-        if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+        if recordMask & uint(fsnotify.Remove) == uint(fsnotify.Remove) {
             content += "Remove,"
         }
-        if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+        if recordMask & uint(fsnotify.Rename) == uint(fsnotify.Rename) {
             content += "Rename,"
         }
-        if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+        if recordMask & uint(fsnotify.Chmod) == uint(fsnotify.Chmod) {
             content += "Chmod,"
         }
-        if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+        if recordMask & uint(fsnotify.Open) == uint(fsnotify.Open) {
             content += "Open,"
         }
         content += "Path\n"
 
         for _, v := range fevents {
-            if recordMask & uint64(fsnotify.Create) == uint64(fsnotify.Create) {
+            if recordMask & uint(fsnotify.Create) == uint(fsnotify.Create) {
                 content += strconv.Itoa(int(v.Events[fsnotify.Create])) + ","
             }
-            if recordMask & uint64(fsnotify.Write) == uint64(fsnotify.Write) {
+            if recordMask & uint(fsnotify.Write) == uint(fsnotify.Write) {
                 content += strconv.Itoa(int(v.Events[fsnotify.Write])) + ","
             }
-            if recordMask & uint64(fsnotify.Remove) == uint64(fsnotify.Remove) {
+            if recordMask & uint(fsnotify.Remove) == uint(fsnotify.Remove) {
                 content += strconv.Itoa(int(v.Events[fsnotify.Remove])) + ","
             }
-            if recordMask & uint64(fsnotify.Rename) == uint64(fsnotify.Rename) {
+            if recordMask & uint(fsnotify.Rename) == uint(fsnotify.Rename) {
                 content += strconv.Itoa(int(v.Events[fsnotify.Rename])) + ","
             }
-            if recordMask & uint64(fsnotify.Chmod) == uint64(fsnotify.Chmod) {
+            if recordMask & uint(fsnotify.Chmod) == uint(fsnotify.Chmod) {
                 content += strconv.Itoa(int(v.Events[fsnotify.Chmod])) + ","
             }
-            if recordMask & uint64(fsnotify.Open) == uint64(fsnotify.Open) {
+            if recordMask & uint(fsnotify.Open) == uint(fsnotify.Open) {
                 content += strconv.Itoa(int(v.Events[fsnotify.Open])) + ","
             }
             content += v.Name + "\n"

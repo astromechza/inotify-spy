@@ -27,7 +27,7 @@ func (b *EventBox) Add(e *fsnotify.Event) {
     if ok == false {
         fevent = fileevents.FileWithEvents{
             Name: e.Name,
-            Events: make(map[fsnotify.Op]int64),
+            Events: make(map[fsnotify.Op]int),
             Total: 0,
         }
     }

@@ -7,8 +7,8 @@ import (
 
 type FileWithEvents struct {
     Name string
-    Events map[fsnotify.Op]int64
-    Total int64
+    Events map[fsnotify.Op]int
+    Total int
 }
 
 type ByEventTotal []FileWithEvents

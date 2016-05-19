@@ -24,8 +24,13 @@ function buildbinary {
     echo
 }
 
-# build for mac
+# build for mac 64bit
 buildbinary darwin amd64
 
-# build for linux
+# build for linux 64bit
 buildbinary linux amd64
+
+# build for linux 32 bit
+buildbinary linux 386
+
+# see https://golang.org/doc/install/source#environment for more goos/goarch variables
