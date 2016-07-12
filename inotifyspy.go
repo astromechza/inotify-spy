@@ -155,6 +155,8 @@ func main() {
     watcher, err := fsnotify.NewWatcher()
     if err != nil {
         fmt.Printf("Failed to setup fsnotify watcher: %v\n", err.Error())
+        fmt.Println("The fsnotify watcher may not support your operating system or kernel version.")
+        os.Exit(1)
     }
     // make sure we close it
     defer watcher.Close()
